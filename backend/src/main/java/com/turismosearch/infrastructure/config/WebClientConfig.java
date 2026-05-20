@@ -1,6 +1,7 @@
 package com.turismosearch.infrastructure.config;
 
 import com.turismosearch.infrastructure.properties.ClaudeProperties;
+import com.turismosearch.infrastructure.properties.GroqProperties;
 import com.turismosearch.infrastructure.properties.IbgeProperties;
 import com.turismosearch.infrastructure.properties.NominatimProperties;
 import io.netty.channel.ChannelOption;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class WebClientConfig {
 
     private final ClaudeProperties claudeProperties;
+    private final GroqProperties groqProperties;
     private final NominatimProperties nominatimProperties;
     private final IbgeProperties ibgeProperties;
 
@@ -40,6 +42,23 @@ public class WebClientConfig {
                 .defaultHeader("x-api-key", claudeProperties.getApiKey())
                 .defaultHeader("anthropic-version", "2023-06-01")
                 .defaultHeader("anthropic-beta", "prompt-caching-2024-07-31")
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+    }
+
+    @Bean("groqWebClient")
+    public WebClient groqWebClient() {
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                .responseTimeout(Duration.ofSeconds(groqProperties.getTimeoutSeconds()))
+                .doOnConnected(conn -> conn.addHandlerLast(
+                        new ReadTimeoutHandler(groqProperties.getTimeoutSeconds(), TimeUnit.SECONDS)));
+
+        return WebClient.builder()
+                .baseUrl("https://api.groq.com/openai/v1")
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + groqProperties.getApiKey())
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }

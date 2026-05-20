@@ -1,10 +1,13 @@
 package com.turismosearch.domain.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
 @Builder
+@JsonDeserialize(builder = Coordinates.CoordinatesBuilder.class)
 public class Coordinates {
     double latitude;
     double longitude;
@@ -16,9 +19,6 @@ public class Coordinates {
                 .build();
     }
 
-    /**
-     * Calcula distância em km usando fórmula de Haversine
-     */
     public double distanceKmTo(Coordinates other) {
         final double R = 6371.0;
         double dLat = Math.toRadians(other.latitude - this.latitude);
@@ -29,4 +29,7 @@ public class Coordinates {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class CoordinatesBuilder {}
 }

@@ -1,15 +1,12 @@
-package com.turismosearch.adapter.outbound.ai;
+package com.turismosearch.adapter.outbound.ai.groq;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.turismosearch.adapter.outbound.ai.dto.ClaudeMessage;
-import com.turismosearch.adapter.outbound.ai.dto.ClaudeRequest;
-import com.turismosearch.adapter.outbound.ai.dto.ClaudeResponse;
+import com.turismosearch.adapter.outbound.ai.ClaudePromptBuilder;
 import com.turismosearch.domain.exception.AiServiceException;
 import com.turismosearch.domain.model.*;
 import com.turismosearch.domain.port.outbound.AiRecommendationPort;
-import com.turismosearch.infrastructure.properties.ClaudeProperties;
+import com.turismosearch.infrastructure.properties.GroqProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,54 +20,63 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "ai.provider", havingValue = "claude")
-public class ClaudeAiAdapter implements AiRecommendationPort {
+@ConditionalOnProperty(name = "ai.provider", havingValue = "groq", matchIfMissing = true)
+public class GroqAiAdapter implements AiRecommendationPort {
 
-    private final WebClient claudeWebClient;
+    private final WebClient groqWebClient;
     private final ClaudePromptBuilder promptBuilder;
-    private final ClaudeProperties properties;
+    private final GroqProperties properties;
     private final ObjectMapper objectMapper;
 
     @Override
     @Cacheable(value = "attractions", key = "#cityDisplayName + '-' + #query.radiusKm + '-' + #query.maxResults")
     public List<Attraction> recommendAttractions(SearchQuery query, String cityDisplayName) {
-        log.info("Consultando Claude API para: {} (cache MISS)", cityDisplayName);
+        log.info("Consultando Groq API (Llama 3.3 70B) para: {} (cache MISS)", cityDisplayName);
 
         String systemPrompt = promptBuilder.buildSystemPrompt();
         String userPrompt = promptBuilder.buildUserPrompt(query, cityDisplayName);
 
-        ClaudeRequest request = ClaudeRequest.builder()
+        GroqRequest request = GroqRequest.builder()
                 .model(properties.getModel())
                 .maxTokens(properties.getMaxTokens())
-                .system(List.of(ClaudeRequest.ClaudeSystemBlock.withCache(systemPrompt)))
-                .messages(List.of(ClaudeMessage.user(userPrompt)))
+                .messages(List.of(
+                        GroqMessage.system(systemPrompt),
+                        GroqMessage.user(userPrompt)
+                ))
+                .responseFormat(GroqRequest.ResponseFormat.builder().type("json_object").build())
                 .build();
 
         try {
-            ClaudeResponse response = claudeWebClient.post()
-                    .uri("/messages")
+            GroqResponse response = groqWebClient.post()
+                    .uri("/chat/completions")
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(ClaudeResponse.class)
+                    .bodyToMono(GroqResponse.class)
                     .block();
 
             if (response == null) {
-                throw new AiServiceException("Resposta nula da Claude API");
+                throw new AiServiceException("Resposta nula da Groq API");
             }
 
-            logUsage(response, cityDisplayName);
+            if (response.getUsage() != null) {
+                log.info("Groq usage para {}: prompt={}, completion={}, total={}",
+                        cityDisplayName,
+                        response.getUsage().getPromptTokens(),
+                        response.getUsage().getCompletionTokens(),
+                        response.getUsage().getTotalTokens());
+            }
+
             return parseAttractions(response.getTextContent());
 
         } catch (AiServiceException e) {
             throw e;
         } catch (Exception e) {
-            throw new AiServiceException("Erro ao consultar Claude API: " + e.getMessage(), e);
+            throw new AiServiceException("Erro ao consultar Groq API: " + e.getMessage(), e);
         }
     }
 
     private List<Attraction> parseAttractions(String jsonText) {
         try {
-            // Limpar possível markdown residual
             String cleaned = jsonText.trim()
                     .replaceAll("^```json\\s*", "")
                     .replaceAll("^```\\s*", "")
@@ -80,7 +86,7 @@ public class ClaudeAiAdapter implements AiRecommendationPort {
             JsonNode attractionsNode = root.get("attractions");
 
             if (attractionsNode == null || !attractionsNode.isArray()) {
-                log.warn("Resposta da IA não contém array 'attractions'");
+                log.warn("Resposta da IA não contém array 'attractions'. Resposta: {}", cleaned.substring(0, Math.min(200, cleaned.length())));
                 return List.of();
             }
 
@@ -89,13 +95,13 @@ public class ClaudeAiAdapter implements AiRecommendationPort {
                 try {
                     result.add(mapNodeToAttraction(node));
                 } catch (Exception e) {
-                    log.warn("Erro ao mapear atração: {}", e.getMessage());
+                    log.warn("Erro ao mapear atração individual: {}", e.getMessage());
                 }
             }
             return result;
 
         } catch (Exception e) {
-            log.error("Erro ao parsear resposta JSON da IA: {}", jsonText, e);
+            log.error("Erro ao parsear JSON da Groq: {}", e.getMessage());
             throw new AiServiceException("Erro ao processar resposta da IA");
         }
     }
@@ -104,10 +110,11 @@ public class ClaudeAiAdapter implements AiRecommendationPort {
         Coordinates coords = null;
         JsonNode coordsNode = node.get("coordinates");
         if (coordsNode != null) {
-            coords = Coordinates.of(
-                    coordsNode.path("lat").asDouble(),
-                    coordsNode.path("lng").asDouble()
-            );
+            double lat = coordsNode.path("lat").asDouble();
+            double lng = coordsNode.path("lng").asDouble();
+            if (lat != 0 || lng != 0) {
+                coords = Coordinates.of(lat, lng);
+            }
         }
 
         AttractionCategory category;
@@ -117,40 +124,35 @@ public class ClaudeAiAdapter implements AiRecommendationPort {
             category = AttractionCategory.OTHER;
         }
 
-        List<String> tags = readStringList(node.get("tags"));
-        List<String> highlights = readStringList(node.get("highlights"));
-        List<String> tips = readStringList(node.get("tips"));
-
         return Attraction.builder()
-                .name(node.path("name").asText())
-                .description(node.path("description").asText())
+                .name(node.path("name").asText("Atração sem nome"))
+                .description(node.path("description").asText(""))
                 .category(category)
-                .subcategory(node.path("subcategory").asText(null))
+                .subcategory(nullIfEmpty(node.path("subcategory").asText(null)))
                 .coordinates(coords)
-                .tags(tags)
-                .highlights(highlights)
-                .bestPeriod(node.path("best_period").asText(null))
-                .openingHours(node.path("opening_hours").asText(null))
-                .entryFee(node.path("entry_fee").asText(null))
-                .accessibilityInfo(node.path("accessibility_info").asText(null))
-                .tips(tips)
-                .aiConfidenceScore(node.path("confidence_score").asDouble(0.8))
+                .tags(readStringList(node.get("tags")))
+                .highlights(readStringList(node.get("highlights")))
+                .bestPeriod(nullIfEmpty(node.path("best_period").asText(null)))
+                .openingHours(nullIfEmpty(node.path("opening_hours").asText(null)))
+                .entryFee(nullIfEmpty(node.path("entry_fee").asText(null)))
+                .accessibilityInfo(nullIfEmpty(node.path("accessibility_info").asText(null)))
+                .tips(readStringList(node.get("tips")))
+                .aiConfidenceScore(node.path("confidence_score").asDouble(0.75))
                 .build();
     }
 
     private List<String> readStringList(JsonNode node) {
         if (node == null || !node.isArray()) return List.of();
         List<String> result = new ArrayList<>();
-        node.forEach(n -> result.add(n.asText()));
+        node.forEach(n -> {
+            String text = n.asText("").trim();
+            if (!text.isEmpty()) result.add(text);
+        });
         return result;
     }
 
-    private void logUsage(ClaudeResponse response, String city) {
-        if (response.getUsage() != null) {
-            var u = response.getUsage();
-            log.info("Claude usage para {}: input={}, output={}, cacheHit={}, cacheCreate={}",
-                    city, u.getInputTokens(), u.getOutputTokens(),
-                    u.getCacheReadInputTokens(), u.getCacheCreationInputTokens());
-        }
+    private String nullIfEmpty(String value) {
+        if (value == null || value.isBlank() || value.equals("null")) return null;
+        return value;
     }
 }

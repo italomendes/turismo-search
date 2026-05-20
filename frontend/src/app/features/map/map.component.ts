@@ -1,6 +1,6 @@
 import {
   Component, OnInit, OnDestroy, input, effect,
-  signal, output, ElementRef, viewChild
+  output, ElementRef, viewChild, Injector, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
@@ -22,21 +22,23 @@ export class MapComponent implements OnInit, OnDestroy {
 
   private map?: L.Map;
   private markers = new Map<string, L.Marker>();
+  private injector = inject(Injector);
 
   ngOnInit() {
     this.initMap();
 
+    // effect() precisa de contexto de injeção — usar Injector explícito
     effect(() => {
       const list = this.attractions();
       this.clearMarkers();
       list.forEach(a => this.addMarker(a));
       this.fitBounds();
-    });
+    }, { injector: this.injector });
 
     effect(() => {
       const id = this.selectedId();
       if (id) this.highlightMarker(id);
-    });
+    }, { injector: this.injector });
   }
 
   private initMap() {
@@ -45,12 +47,11 @@ export class MapComponent implements OnInit, OnDestroy {
       if (!el) return;
 
       this.map = L.map(el, {
-        center: [-15.78, -47.93], // Centro do Brasil
+        center: [-15.78, -47.93],
         zoom: 5,
         zoomControl: true
       });
 
-      // Carto Voyager tiles (gratuito, visual limpo)
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
         maxZoom: 19

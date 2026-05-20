@@ -1,5 +1,8 @@
 package com.turismosearch.domain.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
 import lombok.Value;
 
@@ -8,6 +11,8 @@ import java.util.UUID;
 
 @Value
 @Builder
+@JsonDeserialize(builder = Attraction.AttractionBuilder.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Attraction {
     @Builder.Default
     String id = UUID.randomUUID().toString();
@@ -27,4 +32,7 @@ public class Attraction {
     List<String> tips;
     String address;
     Double aiConfidenceScore;
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class AttractionBuilder {}
 }

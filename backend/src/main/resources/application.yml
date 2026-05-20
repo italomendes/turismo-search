@@ -12,6 +12,18 @@ spring:
   cache:
     type: redis
 
+# ---- Provedor de IA ativo (groq | claude) ----
+ai:
+  provider: ${AI_PROVIDER:groq}
+
+# ---- Groq (free tier — padrão) ----
+groq:
+  api-key: ${GROQ_API_KEY:}
+  model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  max-tokens: ${GROQ_MAX_TOKENS:4096}
+  timeout-seconds: 60
+
+# ---- Anthropic / Claude (requer créditos) ----
 anthropic:
   api-key: ${ANTHROPIC_API_KEY:change-me}
   model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
@@ -48,7 +60,7 @@ management:
 resilience4j:
   retry:
     instances:
-      claude-api:
+      groq-api:
         max-attempts: 3
         wait-duration: 2s
       nominatim:
