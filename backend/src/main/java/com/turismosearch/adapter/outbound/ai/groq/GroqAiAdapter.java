@@ -28,13 +28,19 @@ public class GroqAiAdapter implements AiRecommendationPort {
     private final GroqProperties properties;
     private final ObjectMapper objectMapper;
 
+    private static final int OSM_THRESHOLD = 3;
+
     @Override
     @Cacheable(value = "attractions", key = "#cityDisplayName + '-' + #query.radiusKm + '-' + #query.maxResults")
     public List<Attraction> recommendAttractions(SearchQuery query, String cityDisplayName) {
-        log.info("Consultando Groq API (Llama 3.3 70B) para: {} (cache MISS)", cityDisplayName);
+        boolean hasOsmPois = query.getOsmPois() != null && query.getOsmPois().size() >= OSM_THRESHOLD;
+        log.info("Consultando Groq API (Llama 3.3 70B) para: {} — modo: {} (cache MISS)",
+                cityDisplayName, hasOsmPois ? "ENRICH" : "DIRECT");
 
         String systemPrompt = promptBuilder.buildSystemPrompt();
-        String userPrompt = promptBuilder.buildUserPrompt(query, cityDisplayName);
+        String userPrompt = hasOsmPois
+                ? promptBuilder.buildEnrichPrompt(query.getOsmPois(), query, cityDisplayName)
+                : promptBuilder.buildDirectPrompt(query, cityDisplayName);
 
         GroqRequest request = GroqRequest.builder()
                 .model(properties.getModel())

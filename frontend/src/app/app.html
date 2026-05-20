@@ -19,10 +19,10 @@
     @if (results()) {
       <div class="results-section">
         <div class="results-header">
-          <h2>
-            {{ results()!.totalFound }} atrações
-            @if (results()!.city) { em {{ results()!.city }}, {{ results()!.state }} }
-          </h2>
+          <h2>{{ results()!.totalFound }} atrações encontradas</h2>
+          @if (results()!.city) {
+            <span class="results-meta">{{ results()!.city }}, {{ results()!.state }}</span>
+          }
         </div>
 
         <div class="cards-grid">
@@ -40,9 +40,10 @@
 
     @if (!results()) {
       <div class="empty-state">
-        <div class="neo-card empty-card">
-          <h2>🗺️ Explore o Brasil</h2>
-          <p>Use o painel ao lado para buscar atrações turísticas na cidade de sua escolha.</p>
+        <div class="card empty-card">
+          <div class="empty-icon">🗺️</div>
+          <h2>Explore o Brasil</h2>
+          <p>Use o painel ao lado para buscar atrações turísticas com IA + dados reais do OpenStreetMap.</p>
         </div>
       </div>
     }

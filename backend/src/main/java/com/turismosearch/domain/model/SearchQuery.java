@@ -17,4 +17,6 @@ public class SearchQuery {
     List<AttractionCategory> categories;
     @Builder.Default
     int maxResults = 20;
+    /** POIs reais obtidos do OpenStreetMap via Overpass API (pode ser null/vazio) */
+    List<OverpassPoi> osmPois;
 }

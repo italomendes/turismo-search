@@ -4,6 +4,7 @@ import com.turismosearch.domain.model.*;
 import com.turismosearch.domain.port.inbound.SearchAttractionsUseCase;
 import com.turismosearch.domain.port.outbound.AiRecommendationPort;
 import com.turismosearch.domain.port.outbound.GeocodingPort;
+import com.turismosearch.domain.port.outbound.RealPoiPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,15 +19,30 @@ public class SearchAttractionsService implements SearchAttractionsUseCase {
 
     private final AiRecommendationPort aiRecommendationPort;
     private final GeocodingPort geocodingPort;
+    private final RealPoiPort realPoiPort;
 
-    @Override
+        @Override
     public List<Attraction> searchAttractions(SearchQuery query) {
         String cityDisplayName = resolveCityName(query);
         log.info("Buscando atrações para: {} num raio de {}km", cityDisplayName, query.getRadiusKm());
 
-        List<Attraction> attractions = aiRecommendationPort.recommendAttractions(query, cityDisplayName);
+        // 1. Resolve center coordinates for OSM lookup
+        Coordinates center = resolveCenter(query);
 
-        // Enriquecer com distância calculada se temos coordenadas do usuário
+        // 2. Fetch real POIs from OpenStreetMap via Overpass API
+        List<OverpassPoi> osmPois = List.of();
+        if (center != null) {
+            osmPois = realPoiPort.findRealPois(center, query.getRadiusKm());
+            log.info("Overpass retornou {} POIs reais para {}", osmPois.size(), cityDisplayName);
+        } else {
+            log.warn("Não foi possível resolver coordenadas do centro — modo direto de IA");
+        }
+
+        // 3. Build enriched query and call AI
+        SearchQuery enrichedQuery = buildQueryWithOsmContext(query, osmPois);
+        List<Attraction> attractions = aiRecommendationPort.recommendAttractions(enrichedQuery, cityDisplayName);
+
+        // 4. Enrich with distance if user has GPS coordinates
         if (query.getUserLocation() != null) {
             attractions = attractions.stream()
                     .map(a -> enrichWithDistance(a, query.getUserLocation()))
@@ -39,6 +55,41 @@ public class SearchAttractionsService implements SearchAttractionsUseCase {
 
         log.info("Encontradas {} atrações para {}", attractions.size(), cityDisplayName);
         return attractions;
+    }
+
+    /**
+     * Resolve the geographic center for the Overpass query.
+     * For GPS mode: use user location.
+     * For city mode: geocode the city name.
+     */
+    private Coordinates resolveCenter(SearchQuery query) {
+        if (query.getUserLocation() != null) {
+            return query.getUserLocation();
+        }
+        if (query.getCityName() != null && !query.getCityName().isBlank()) {
+            try {
+                return geocodingPort.geocodeCity(query.getCityName(), query.getStateCode()).orElse(null);
+            } catch (Exception e) {
+                log.warn("Falha ao geocodificar cidade para Overpass: {}", e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Attach OSM context to the query so the AI adapter can choose ENRICH vs DIRECT mode.
+     */
+    private SearchQuery buildQueryWithOsmContext(SearchQuery query, List<OverpassPoi> osmPois) {
+        if (osmPois.isEmpty()) return query;
+        return SearchQuery.builder()
+                .cityName(query.getCityName())
+                .stateCode(query.getStateCode())
+                .userLocation(query.getUserLocation())
+                .radiusKm(query.getRadiusKm())
+                .maxResults(query.getMaxResults())
+                .categories(query.getCategories())
+                .osmPois(osmPois)
+                .build();
     }
 
     private String resolveCityName(SearchQuery query) {

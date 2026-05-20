@@ -1,35 +1,82 @@
 .city-autocomplete {
-  background: var(--color-surface);
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
 }
+
 .row {
   display: flex;
-  gap: var(--space-md);
-  @media (max-width: 600px) { flex-direction: column; }
+  gap: var(--space-sm);
+  align-items: flex-end;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
+
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
-  label { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; }
-  &.city-field { flex: 1; }
+  gap: 5px;
+
+  label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-family: var(--font-mono);
+  }
+
+  &.state-field {
+    width: 82px;
+    flex-shrink: 0;
+  }
+
+  &.city-field {
+    flex: 1;
+  }
 }
+
+.state-select {
+  width: 82px;
+  padding: 9px 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .autocomplete-wrapper { position: relative; }
+
 .dropdown {
   position: absolute;
-  top: 100%;
-  left: 0; right: 0;
-  z-index: 100;
-  background: var(--color-surface);
-  border: var(--border);
-  border-top: none;
-  box-shadow: var(--shadow-md);
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-dropdown);
   list-style: none;
-  max-height: 220px;
+  max-height: 200px;
   overflow-y: auto;
+  padding: 4px 0;
+
   li {
-    padding: var(--space-sm) var(--space-md);
+    padding: 9px var(--space-md);
     cursor: pointer;
-    font-size: 0.95rem;
-    &:hover { background: var(--color-primary); font-weight: 700; }
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    transition: background 0.1s ease, color 0.1s ease;
+
+    &:hover {
+      background: var(--color-surface-3);
+      color: var(--color-text);
+    }
   }
 }

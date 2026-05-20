@@ -16,13 +16,29 @@ export class AttractionCardComponent {
 
   getCategoryColor(): string {
     const cat = this.attraction().category;
-    return cat ? CATEGORY_COLORS[cat] : '#FFD600';
+    return cat ? CATEGORY_COLORS[cat] : '#717171';
+  }
+
+  getCategoryColorLight(): string {
+    const color = this.getCategoryColor();
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},0.15)`;
+  }
+
+  getCategoryBorderColor(): string {
+    const color = this.getCategoryColor();
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},0.35)`;
   }
 
   getConfidenceLabel(): string {
     const score = this.attraction().aiConfidenceScore;
-    if (score >= 0.9) return '⭐ Alta confiança';
-    if (score >= 0.7) return '✓ Boa confiança';
-    return '~ Confiança moderada';
+    if (score >= 0.9) return 'OSM verified';
+    if (score >= 0.7) return 'AI confident';
+    return 'AI estimated';
   }
 }

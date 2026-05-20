@@ -1,8 +1,9 @@
 .app-layout {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: 380px 1fr;
   height: 100vh;
   overflow: hidden;
+  background: var(--color-bg);
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -14,22 +15,26 @@
 
 .sidebar {
   overflow-y: auto;
-  border-right: var(--border);
-  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
 }
 
 .main-content {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--color-bg);
 
   @media (max-width: 900px) { overflow: auto; }
 }
 
 .map-section {
-  flex: 0 0 50vh;
-  min-height: 300px;
-  border-bottom: var(--border);
+  flex: 0 0 45vh;
+  min-height: 280px;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
 }
 
 .results-section {
@@ -40,20 +45,27 @@
 
 .results-header {
   margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+
   h2 {
-    font-size: 1.5rem;
-    background: var(--color-primary);
-    display: inline-block;
-    padding: var(--space-xs) var(--space-md);
-    border: var(--border);
-    box-shadow: var(--shadow-sm);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .results-meta {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
   }
 }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-md);
 }
 
 .empty-state {
@@ -66,8 +78,25 @@
 
 .empty-card {
   text-align: center;
-  max-width: 400px;
-  background: var(--color-primary);
-  h2 { font-size: 2rem; margin-bottom: var(--space-md); }
-  p { font-size: 1rem; }
+  max-width: 360px;
+  padding: var(--space-xl);
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: var(--space-md);
+    opacity: 0.6;
+  }
+
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+    color: var(--color-text);
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
 }

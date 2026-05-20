@@ -1,55 +1,81 @@
 <section class="search-container">
+
+  <!-- Header -->
   <header class="search-header">
-    <h1>🗺️ TurismoSearch</h1>
-    <p class="subtitle">Descubra atrações turísticas com IA</p>
+    <div class="logo-row">
+      <span class="logo-dot"></span>
+      <h1>TurismoSearch</h1>
+    </div>
+    <p class="subtitle">AI + OpenStreetMap</p>
   </header>
 
-  <!-- Mode Toggle -->
-  <div class="mode-toggle">
-    <button class="neo-btn"
-      [class.neo-btn--accent]="searchMode() === 'location'"
-      [class.neo-btn--outline]="searchMode() !== 'location'"
-      (click)="setMode('location')">
-      📍 Usar minha localização
-    </button>
-    <button class="neo-btn"
-      [class.neo-btn--accent]="searchMode() === 'city'"
-      [class.neo-btn--outline]="searchMode() !== 'city'"
-      (click)="setMode('city')">
-      🏙️ Escolher cidade
+  <!-- Body -->
+  <div class="search-body">
+
+    <!-- Mode Toggle -->
+    <div>
+      <p class="section-label">Modo de busca</p>
+      <div class="mode-toggle">
+        <button class="mode-btn"
+          [class.active]="searchMode() === 'location'"
+          (click)="setMode('location')">
+          <span class="mode-icon">📍</span>
+          Minha localização
+        </button>
+        <button class="mode-btn"
+          [class.active]="searchMode() === 'city'"
+          (click)="setMode('city')">
+          <span class="mode-icon">🏙️</span>
+          Escolher cidade
+        </button>
+      </div>
+    </div>
+
+    <!-- GPS Mode -->
+    @if (searchMode() === 'location') {
+      <div class="location-card">
+        <p>
+          <span class="ping-indicator"></span>
+          Localização GPS será usada para buscar atrações próximas.
+        </p>
+        @if (geoError()) {
+          <div class="error-msg" style="margin-top: 8px">⚠️ {{ geoError() }}</div>
+        }
+      </div>
+    }
+
+    <!-- City Mode -->
+    @if (searchMode() === 'city') {
+      <div>
+        <p class="section-label">Localização</p>
+        <app-city-autocomplete (citySelected)="onCitySelected($event)" />
+      </div>
+    }
+
+    <!-- Filters -->
+    <app-filter-panel
+      [radiusKm]="radiusKm"
+      (radiusChanged)="radiusKm = $event"
+      (categoriesChanged)="onCategoriesChanged($event)" />
+
+    @if (error()) {
+      <div class="error-msg">❌ {{ error() }}</div>
+    }
+
+  </div>
+
+  <!-- Footer: Search Button -->
+  <div class="search-footer">
+    <button class="btn search-btn"
+      [disabled]="loading()"
+      (click)="search()">
+      @if (loading()) {
+        <span class="btn-spinner"></span>
+        Buscando atrações...
+      } @else {
+        🔍 Buscar Atrações
+      }
     </button>
   </div>
 
-  <!-- GPS Mode -->
-  @if (searchMode() === 'location') {
-    <div class="neo-card location-card">
-      <p>📡 Sua localização GPS será usada para buscar atrações próximas.</p>
-      @if (geoError()) {
-        <div class="error-msg">⚠️ {{ geoError() }}</div>
-      }
-    </div>
-  }
-
-  <!-- City Mode -->
-  @if (searchMode() === 'city') {
-    <app-city-autocomplete (citySelected)="onCitySelected($event)" />
-  }
-
-  <!-- Filters -->
-  <app-filter-panel
-    [radiusKm]="radiusKm"
-    (radiusChanged)="radiusKm = $event"
-    (categoriesChanged)="onCategoriesChanged($event)" />
-
-  <!-- Search Button -->
-  <button class="neo-btn search-btn"
-    [disabled]="loading()"
-    (click)="search()">
-    @if (loading()) { ⏳ Buscando... }
-    @else { 🔍 Buscar Atrações }
-  </button>
-
-  @if (error()) {
-    <div class="error-msg">❌ {{ error() }}</div>
-  }
 </section>

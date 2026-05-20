@@ -1,20 +1,22 @@
-<div class="city-autocomplete neo-card">
+<div class="city-autocomplete card">
   <div class="row">
-    <div class="field">
+    <!-- Estado: compacto, só sigla -->
+    <div class="field state-field">
       <label>Estado</label>
-      <select class="neo-input" [(ngModel)]="selectedState">
-        <option value="">Selecione o estado</option>
+      <select class="input state-select" [(ngModel)]="selectedState">
+        <option value="">UF</option>
         @for (s of states(); track s.ibgeCode) {
-          <option [value]="s.stateCode">{{ s.name }} ({{ s.stateCode }})</option>
+          <option [value]="s.stateCode">{{ s.stateCode }}</option>
         }
       </select>
     </div>
 
+    <!-- Cidade: ocupa o espaço restante -->
     <div class="field city-field">
       <label>Cidade</label>
       <div class="autocomplete-wrapper">
         <input
-          class="neo-input"
+          class="input"
           type="text"
           placeholder="Digite o nome da cidade..."
           [(ngModel)]="cityQuery"

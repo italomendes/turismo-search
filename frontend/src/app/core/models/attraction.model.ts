@@ -24,18 +24,18 @@ export const CATEGORY_LABELS: Record<AttractionCategory, string> = {
 };
 
 export const CATEGORY_COLORS: Record<AttractionCategory, string> = {
-  WATERFALL: '#00E5FF',
-  TRAIL: '#69FF47',
-  PARK: '#00C853',
-  BEACH: '#FFD600',
-  HISTORICAL: '#FF6D00',
-  CULTURAL: '#D500F9',
-  GASTRONOMIC: '#FF4D4D',
-  INN: '#FF9100',
-  CAVE: '#795548',
-  ADVENTURE: '#E040FB',
-  RELIGIOUS: '#607D8B',
-  OTHER: '#9E9E9E'
+  WATERFALL: '#0077B6',
+  TRAIL: '#2D6A4F',
+  PARK: '#40916C',
+  BEACH: '#F4A261',
+  HISTORICAL: '#BC6C25',
+  CULTURAL: '#7B2D8B',
+  GASTRONOMIC: '#E63946',
+  INN: '#E07B39',
+  CAVE: '#6D4C41',
+  ADVENTURE: '#9C27B0',
+  RELIGIOUS: '#546E7A',
+  OTHER: '#717171'
 };
 
 export interface Attraction {
