@@ -1,0 +1,34 @@
+<div class="city-autocomplete neo-card">
+  <div class="row">
+    <div class="field">
+      <label>Estado</label>
+      <select class="neo-input" [(ngModel)]="selectedState">
+        <option value="">Selecione o estado</option>
+        @for (s of states(); track s.ibgeCode) {
+          <option [value]="s.stateCode">{{ s.name }} ({{ s.stateCode }})</option>
+        }
+      </select>
+    </div>
+
+    <div class="field city-field">
+      <label>Cidade</label>
+      <div class="autocomplete-wrapper">
+        <input
+          class="neo-input"
+          type="text"
+          placeholder="Digite o nome da cidade..."
+          [(ngModel)]="cityQuery"
+          (ngModelChange)="onCityInput()"
+          [disabled]="!selectedState" />
+
+        @if (showDropdown()) {
+          <ul class="dropdown">
+            @for (city of cities(); track city.ibgeCode) {
+              <li (click)="selectCity(city)">{{ city.name }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </div>
+</div>

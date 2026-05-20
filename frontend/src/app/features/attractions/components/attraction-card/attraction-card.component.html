@@ -1,0 +1,46 @@
+<article class="attraction-card"
+  [class.is-selected]="selected()"
+  (click)="cardClicked.emit(attraction().id)">
+
+  <!-- Category stripe -->
+  <div class="category-stripe"
+    [style.background]="getCategoryColor()">
+    <span class="category-label">{{ attraction().categoryDisplayName }}</span>
+    @if (attraction().distanceKm) {
+      <span class="distance">{{ attraction().distanceKm }} km</span>
+    }
+  </div>
+
+  <div class="card-body">
+    <h3 class="card-title">{{ attraction().name }}</h3>
+
+    @if (attraction().subcategory) {
+      <span class="subcategory">{{ attraction().subcategory }}</span>
+    }
+
+    <p class="description">{{ attraction().description }}</p>
+
+    @if (attraction().highlights?.length) {
+      <ul class="highlights">
+        @for (h of attraction().highlights.slice(0, 2); track h) {
+          <li>✦ {{ h }}</li>
+        }
+      </ul>
+    }
+
+    <div class="card-footer">
+      @if (attraction().bestPeriod) {
+        <span class="period">📅 {{ attraction().bestPeriod }}</span>
+      }
+      <span class="confidence">{{ getConfidenceLabel() }}</span>
+    </div>
+
+    @if (attraction().tags?.length) {
+      <div class="tags">
+        @for (tag of attraction().tags.slice(0, 4); track tag) {
+          <span class="neo-badge tag">{{ tag }}</span>
+        }
+      </div>
+    }
+  </div>
+</article>

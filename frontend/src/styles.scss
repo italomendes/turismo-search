@@ -1,0 +1,135 @@
+/* =============================================
+   TurismoSearch — Design System Neobrutalist
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&family=Inter:wght@400;500;600&display=swap');
+
+/* ---- Tokens ---- */
+:root {
+  --color-primary:    #FFD600;
+  --color-secondary:  #FF4D4D;
+  --color-accent:     #00E5FF;
+  --color-success:    #69FF47;
+  --color-bg:         #FFFEF0;
+  --color-surface:    #FFFFFF;
+  --color-text:       #0A0A0A;
+  --color-muted:      #555555;
+
+  --border:           3px solid #0A0A0A;
+  --border-radius:    0px;
+
+  --shadow-sm:        3px 3px 0px #0A0A0A;
+  --shadow-md:        5px 5px 0px #0A0A0A;
+  --shadow-lg:        8px 8px 0px #0A0A0A;
+  --shadow-hover:     2px 2px 0px #0A0A0A;
+
+  --font-display:     'Space Grotesk', sans-serif;
+  --font-body:        'Inter', sans-serif;
+
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md:   16px;
+  --space-lg:   24px;
+  --space-xl:   40px;
+  --space-2xl:  64px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.neo-card {
+  background: var(--color-surface);
+  border: var(--border);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-lg);
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+  &:hover { box-shadow: var(--shadow-hover); transform: translate(3px, 3px); }
+}
+
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-primary);
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: box-shadow 0.1s, transform 0.1s;
+  text-decoration: none;
+  color: var(--color-text);
+  &:hover  { box-shadow: var(--shadow-md); }
+  &:active { box-shadow: none; transform: translate(3px, 3px); }
+  &--secondary { background: var(--color-secondary); color: white; }
+  &--accent    { background: var(--color-accent); }
+  &--outline   { background: transparent; }
+  &--sm        { padding: var(--space-xs) var(--space-md); font-size: 0.75rem; }
+  &:disabled   { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+}
+
+.neo-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background: var(--color-surface);
+  outline: none;
+  border-radius: 0;
+  &:focus { box-shadow: var(--shadow-md); }
+  &::placeholder { color: var(--color-muted); }
+}
+
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border: 2px solid var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+.grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+
+/* Leaflet overrides */
+.leaflet-container { font-family: var(--font-body) !important; }
+.neo-popup .leaflet-popup-content-wrapper {
+  border: var(--border) !important;
+  box-shadow: var(--shadow-md) !important;
+  border-radius: 0 !important;
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-text); }

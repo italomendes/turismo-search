@@ -1,0 +1,55 @@
+<section class="search-container">
+  <header class="search-header">
+    <h1>🗺️ TurismoSearch</h1>
+    <p class="subtitle">Descubra atrações turísticas com IA</p>
+  </header>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button class="neo-btn"
+      [class.neo-btn--accent]="searchMode() === 'location'"
+      [class.neo-btn--outline]="searchMode() !== 'location'"
+      (click)="setMode('location')">
+      📍 Usar minha localização
+    </button>
+    <button class="neo-btn"
+      [class.neo-btn--accent]="searchMode() === 'city'"
+      [class.neo-btn--outline]="searchMode() !== 'city'"
+      (click)="setMode('city')">
+      🏙️ Escolher cidade
+    </button>
+  </div>
+
+  <!-- GPS Mode -->
+  @if (searchMode() === 'location') {
+    <div class="neo-card location-card">
+      <p>📡 Sua localização GPS será usada para buscar atrações próximas.</p>
+      @if (geoError()) {
+        <div class="error-msg">⚠️ {{ geoError() }}</div>
+      }
+    </div>
+  }
+
+  <!-- City Mode -->
+  @if (searchMode() === 'city') {
+    <app-city-autocomplete (citySelected)="onCitySelected($event)" />
+  }
+
+  <!-- Filters -->
+  <app-filter-panel
+    [radiusKm]="radiusKm"
+    (radiusChanged)="radiusKm = $event"
+    (categoriesChanged)="onCategoriesChanged($event)" />
+
+  <!-- Search Button -->
+  <button class="neo-btn search-btn"
+    [disabled]="loading()"
+    (click)="search()">
+    @if (loading()) { ⏳ Buscando... }
+    @else { 🔍 Buscar Atrações }
+  </button>
+
+  @if (error()) {
+    <div class="error-msg">❌ {{ error() }}</div>
+  }
+</section>

@@ -1,0 +1,31 @@
+<div class="filter-panel neo-card">
+  <button class="toggle-btn" (click)="expanded.set(!expanded())">
+    🎛️ Filtros {{ expanded() ? '▲' : '▼' }}
+    @if (selectedCategories.size > 0) {
+      <span class="count-badge">{{ selectedCategories.size }}</span>
+    }
+  </button>
+
+  @if (expanded()) {
+    <div class="filters-content">
+      <div class="field">
+        <label>Raio de busca: <strong>{{ radius }} km</strong></label>
+        <input type="range" min="5" max="200" step="5"
+          [(ngModel)]="radius" (ngModelChange)="onRadiusChange()" />
+      </div>
+
+      <div class="field">
+        <label>Categorias (opcional)</label>
+        <div class="category-grid">
+          @for (entry of categoryEntries; track entry[0]) {
+            <button class="cat-btn"
+              [class.selected]="isSelected(entry[0])"
+              (click)="toggleCategory(entry[0])">
+              {{ entry[1] }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
