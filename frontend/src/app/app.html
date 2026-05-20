@@ -7,7 +7,8 @@
 
   <!-- Main: Map + Results -->
   <main class="main-content">
-    <!-- Map always visible -->
+
+    <!-- Map: rounded, elevated -->
     <div class="map-section">
       <app-map
         [attractions]="attractions"
@@ -19,7 +20,8 @@
     @if (results()) {
       <div class="results-section">
         <div class="results-header">
-          <h2>{{ results()!.totalFound }} atrações encontradas</h2>
+          <span class="results-dot"></span>
+          <h2>{{ results()!.totalFound }} atrações verificadas</h2>
           @if (results()!.city) {
             <span class="results-meta">{{ results()!.city }}, {{ results()!.state }}</span>
           }
@@ -40,13 +42,14 @@
 
     @if (!results()) {
       <div class="empty-state">
-        <div class="card empty-card">
+        <div class="empty-card">
           <div class="empty-icon">🗺️</div>
           <h2>Explore o Brasil</h2>
-          <p>Use o painel ao lado para buscar atrações turísticas com IA + dados reais do OpenStreetMap.</p>
+          <p>Busque atrações turísticas verificadas pelo OpenStreetMap e enriquecidas com IA.</p>
         </div>
       </div>
     }
+
   </main>
 
 </div>

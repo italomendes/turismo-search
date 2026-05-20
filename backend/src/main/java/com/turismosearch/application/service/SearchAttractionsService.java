@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,28 +24,37 @@ public class SearchAttractionsService implements SearchAttractionsUseCase {
     private final GeocodingPort geocodingPort;
     private final RealPoiPort realPoiPort;
 
-        @Override
+    @Override
     public List<Attraction> searchAttractions(SearchQuery query) {
         String cityDisplayName = resolveCityName(query);
         log.info("Buscando atrações para: {} num raio de {}km", cityDisplayName, query.getRadiusKm());
 
-        // 1. Resolve center coordinates for OSM lookup
+        // 1. Resolve center coordinates for Overpass lookup
         Coordinates center = resolveCenter(query);
-
-        // 2. Fetch real POIs from OpenStreetMap via Overpass API
-        List<OverpassPoi> osmPois = List.of();
-        if (center != null) {
-            osmPois = realPoiPort.findRealPois(center, query.getRadiusKm());
-            log.info("Overpass retornou {} POIs reais para {}", osmPois.size(), cityDisplayName);
-        } else {
-            log.warn("Não foi possível resolver coordenadas do centro — modo direto de IA");
+        if (center == null) {
+            log.warn("Não foi possível resolver coordenadas do centro — abortando");
+            return List.of();
         }
 
-        // 3. Build enriched query and call AI
+        // 2. Fetch REAL POIs from OpenStreetMap (source of truth for existence + coordinates)
+        List<OverpassPoi> osmPois = realPoiPort.findRealPois(center, query.getRadiusKm());
+        log.info("Overpass retornou {} POIs reais para {}", osmPois.size(), cityDisplayName);
+
+        if (osmPois.isEmpty()) {
+            log.warn("Nenhum POI real encontrado no OSM para {} — não retornando resultados (evitando alucinações)", cityDisplayName);
+            return List.of();
+        }
+
+        // 3. Ask AI to ENRICH real OSM POIs (metadata only — AI never invents places)
         SearchQuery enrichedQuery = buildQueryWithOsmContext(query, osmPois);
         List<Attraction> attractions = aiRecommendationPort.recommendAttractions(enrichedQuery, cityDisplayName);
 
-        // 4. Enrich with distance if user has GPS coordinates
+        // 4. CRITICAL: Override AI coordinates with verified OSM coordinates.
+        //    Also filters out any AI-hallucinated place not present in OSM list.
+        attractions = applyVerifiedOsmCoordinates(attractions, osmPois);
+        log.info("Após validação OSM: {} atrações verificadas para {}", attractions.size(), cityDisplayName);
+
+        // 5. Enrich with distance + sort + limit if user has GPS coordinates
         if (query.getUserLocation() != null) {
             attractions = attractions.stream()
                     .map(a -> enrichWithDistance(a, query.getUserLocation()))
@@ -53,15 +65,98 @@ public class SearchAttractionsService implements SearchAttractionsUseCase {
                     .collect(Collectors.toList());
         }
 
-        log.info("Encontradas {} atrações para {}", attractions.size(), cityDisplayName);
+        log.info("Retornando {} atrações verificadas para {}", attractions.size(), cityDisplayName);
         return attractions;
     }
 
+    // -----------------------------------------------------------------------
+    // OSM coordinate validation and override
+    // -----------------------------------------------------------------------
+
     /**
-     * Resolve the geographic center for the Overpass query.
-     * For GPS mode: use user location.
-     * For city mode: geocode the city name.
+     * For every AI-returned attraction, find the best-matching OSM POI by name and
+     * replace the coordinates with the verified OSM lat/lng.
+     * Attractions with no OSM match are discarded (they are AI hallucinations).
      */
+    private List<Attraction> applyVerifiedOsmCoordinates(List<Attraction> attractions, List<OverpassPoi> osmPois) {
+        return attractions.stream()
+                .map(attraction -> {
+                    Optional<OverpassPoi> match = findBestOsmMatch(attraction.getName(), osmPois);
+                    if (match.isEmpty()) {
+                        log.debug("Descartando atração sem correspondência OSM: '{}'", attraction.getName());
+                        return null;
+                    }
+                    OverpassPoi poi = match.get();
+                    Coordinates verifiedCoords = Coordinates.of(poi.lat(), poi.lng());
+                    return Attraction.builder()
+                            .id(attraction.getId())
+                            .name(attraction.getName())
+                            .description(attraction.getDescription())
+                            .category(attraction.getCategory())
+                            .subcategory(attraction.getSubcategory())
+                            .coordinates(verifiedCoords)   // ← always from OSM
+                            .distanceKm(attraction.getDistanceKm())
+                            .tags(attraction.getTags())
+                            .highlights(attraction.getHighlights())
+                            .bestPeriod(attraction.getBestPeriod())
+                            .openingHours(attraction.getOpeningHours())
+                            .entryFee(attraction.getEntryFee())
+                            .accessibilityInfo(attraction.getAccessibilityInfo())
+                            .tips(attraction.getTips())
+                            .address(attraction.getAddress())
+                            .aiConfidenceScore(attraction.getAiConfidenceScore())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Find the best matching OSM POI for a given attraction name using
+     * normalized string comparison (handles accents, case, punctuation).
+     */
+    private Optional<OverpassPoi> findBestOsmMatch(String attractionName, List<OverpassPoi> osmPois) {
+        String normAttraction = normalizeForMatch(attractionName);
+
+        // 1. Exact match after normalization
+        Optional<OverpassPoi> exact = osmPois.stream()
+                .filter(p -> normalizeForMatch(p.name()).equals(normAttraction))
+                .findFirst();
+        if (exact.isPresent()) return exact;
+
+        // 2. One contains the other (handles abbreviations / partial names)
+        Optional<OverpassPoi> partial = osmPois.stream()
+                .filter(p -> {
+                    String normOsm = normalizeForMatch(p.name());
+                    return normOsm.contains(normAttraction) || normAttraction.contains(normOsm);
+                })
+                .findFirst();
+        if (partial.isPresent()) return partial;
+
+        // 3. Fuzzy: at least 60% of words in common
+        String[] attrWords = normAttraction.split("\\s+");
+        return osmPois.stream()
+                .filter(p -> {
+                    String normOsm = normalizeForMatch(p.name());
+                    long matches = java.util.Arrays.stream(attrWords)
+                            .filter(w -> w.length() > 3 && normOsm.contains(w))
+                            .count();
+                    return attrWords.length > 0 && matches >= Math.ceil(attrWords.length * 0.6);
+                })
+                .findFirst();
+    }
+
+    private String normalizeForMatch(String name) {
+        if (name == null) return "";
+        String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return normalized.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
     private Coordinates resolveCenter(SearchQuery query) {
         if (query.getUserLocation() != null) {
             return query.getUserLocation();
@@ -76,11 +171,7 @@ public class SearchAttractionsService implements SearchAttractionsUseCase {
         return null;
     }
 
-    /**
-     * Attach OSM context to the query so the AI adapter can choose ENRICH vs DIRECT mode.
-     */
     private SearchQuery buildQueryWithOsmContext(SearchQuery query, List<OverpassPoi> osmPois) {
-        if (osmPois.isEmpty()) return query;
         return SearchQuery.builder()
                 .cityName(query.getCityName())
                 .stateCode(query.getStateCode())

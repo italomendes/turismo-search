@@ -31,7 +31,7 @@ public class ClaudeAiAdapter implements AiRecommendationPort {
     private final ClaudeProperties properties;
     private final ObjectMapper objectMapper;
 
-    private static final int OSM_THRESHOLD = 3;
+    private static final int OSM_THRESHOLD = 1; // ENRICH mode whenever OSM has any real POIs
 
     @Override
     @Cacheable(value = "attractions", key = "#cityDisplayName + '-' + #query.radiusKm + '-' + #query.maxResults")

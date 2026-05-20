@@ -4,7 +4,6 @@ import com.turismosearch.infrastructure.properties.ClaudeProperties;
 import com.turismosearch.infrastructure.properties.GroqProperties;
 import com.turismosearch.infrastructure.properties.IbgeProperties;
 import com.turismosearch.infrastructure.properties.NominatimProperties;
-import com.turismosearch.infrastructure.properties.OverpassProperties;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ public class WebClientConfig {
     private final GroqProperties groqProperties;
     private final NominatimProperties nominatimProperties;
     private final IbgeProperties ibgeProperties;
-    private final OverpassProperties overpassProperties;
 
     @Bean("claudeWebClient")
     public WebClient claudeWebClient() {
@@ -90,18 +88,6 @@ public class WebClientConfig {
                 .build();
     }
 
-    @Bean("overpassWebClient")
-    public WebClient overpassWebClient() {
-        HttpClient httpClient = HttpClient.create()
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                .responseTimeout(Duration.ofSeconds(overpassProperties.getTimeoutSeconds()))
-                .doOnConnected(conn -> conn.addHandlerLast(
-                        new ReadTimeoutHandler(overpassProperties.getTimeoutSeconds(), TimeUnit.SECONDS)));
-
-        return WebClient.builder()
-                .baseUrl(overpassProperties.getBaseUrl())
-                .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .build();
-    }
+    // Note: OverpassApiAdapter uses WebClient.Builder directly (auto-configured by Spring)
+    // so it can switch between mirror URLs. No named bean needed here.
 }

@@ -52,9 +52,11 @@ export class MapComponent implements OnInit, OnDestroy {
         zoomControl: true
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // CartoDB Dark Matter — matches dark UI theme perfectly
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19
+        maxZoom: 19,
+        subdomains: 'abcd'
       }).addTo(this.map);
     }, 50);
   }
@@ -83,7 +85,7 @@ export class MapComponent implements OnInit, OnDestroy {
       <div class="map-popup">
         <strong>${attraction.name}</strong>
         <span class="popup-category">${attraction.categoryDisplayName}</span>
-        ${attraction.distanceKm ? `<span>${attraction.distanceKm} km</span>` : ''}
+        ${attraction.distanceKm ? `<span class="popup-distance">⊙ ${attraction.distanceKm} km</span>` : ''}
       </div>
     `, { className: 'neo-popup' });
 

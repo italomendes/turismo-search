@@ -1,6 +1,6 @@
 .app-layout {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 360px 1fr;
   height: 100vh;
   overflow: hidden;
   background: var(--color-bg);
@@ -26,76 +26,101 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg);
+  padding: var(--space-md);
+  gap: var(--space-md);
 
-  @media (max-width: 900px) { overflow: auto; }
+  @media (max-width: 900px) {
+    overflow: auto;
+    padding: var(--space-sm);
+  }
 }
 
+/* ---- Map: bigger, rounded, elevated ---- */
 .map-section {
-  flex: 0 0 45vh;
-  min-height: 280px;
-  border-bottom: 1px solid var(--color-border);
+  flex: 0 0 62vh;
+  min-height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
   position: relative;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.5);
 }
 
+/* ---- Results ---- */
 .results-section {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-lg);
+  min-height: 0;
+  padding-bottom: var(--space-md);
 }
 
 .results-header {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-sm);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
 
   h2 {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--color-text);
   }
 
   .results-meta {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--color-text-muted);
     font-family: var(--font-mono);
+  }
+
+  .results-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+    box-shadow: 0 0 4px var(--color-success);
+    flex-shrink: 0;
   }
 }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--space-sm);
 }
 
+/* ---- Empty state ---- */
 .empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 1;
-  padding: var(--space-xl);
+  min-height: 200px;
 }
 
 .empty-card {
   text-align: center;
-  max-width: 360px;
+  max-width: 340px;
   padding: var(--space-xl);
+  border: 1px dashed var(--color-border);
+  border-radius: 12px;
 
   .empty-icon {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     margin-bottom: var(--space-md);
-    opacity: 0.6;
+    opacity: 0.5;
   }
 
   h2 {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     margin-bottom: var(--space-sm);
     color: var(--color-text);
   }
 
   p {
-    font-size: 0.875rem;
+    font-size: 0.82rem;
     color: var(--color-text-secondary);
     line-height: 1.6;
   }
