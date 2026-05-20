@@ -1,0 +1,61 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: turismo-search
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cache:
+    type: redis
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:change-me}
+  model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
+  max-tokens: ${ANTHROPIC_MAX_TOKENS:4096}
+  timeout-seconds: ${ANTHROPIC_TIMEOUT_SECONDS:30}
+
+nominatim:
+  base-url: ${NOMINATIM_BASE_URL:https://nominatim.openstreetmap.org}
+  user-agent: ${NOMINATIM_USER_AGENT:TurismoSearch/1.0}
+  timeout-seconds: ${NOMINATIM_TIMEOUT_SECONDS:10}
+
+ibge:
+  base-url: ${IBGE_BASE_URL:https://servicodados.ibge.gov.br/api/v1}
+  timeout-seconds: ${IBGE_TIMEOUT_SECONDS:10}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  retry:
+    instances:
+      claude-api:
+        max-attempts: 3
+        wait-duration: 2s
+      nominatim:
+        max-attempts: 2
+        wait-duration: 1s
+
+logging:
+  level:
+    root: INFO
+    com.turismosearch: DEBUG
